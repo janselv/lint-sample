@@ -18,3 +18,8 @@ fun <T> producingState(initialValue: T, producer: ProducingStateScope<T>.() -> U
     return scope
 }
 
+// this is here just to test that we exclude usages of producingState in the lint analysis
+// for usages inside this same package
+fun producingStateSample() {
+    val state = producingState(9) { }
+}

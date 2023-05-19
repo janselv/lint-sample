@@ -3,8 +3,7 @@ package me.jansv.internallib
 import de.zalando.lounge.annotations.InternalPlatformApi
 
 @InternalPlatformApi
-interface UtilityClass {
-}
+interface InternalPlatformClass
 
-class DefaultUtility : UtilityClass {
-}
+class InternalPlatformClassImpl : InternalPlatformClass
+

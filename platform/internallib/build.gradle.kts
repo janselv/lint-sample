@@ -6,5 +6,6 @@ plugins {
 
 dependencies {
     api(project(":platform:annotations"))
+    api(project(":platform:runtime"))
     lintChecks(project(":platform:lint"))
 }

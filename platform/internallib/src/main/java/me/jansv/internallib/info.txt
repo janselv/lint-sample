@@ -1,0 +1,6 @@
+Classes and functions in this library are mostly to test how lint sees its source code (usually in compiled form)
+when used in the :app module.
+
+Lint can see two type of sources: 1. source code when is inspecting an entity defined in the project
+that is currently analyzing and 2. class compiled code when is inspecting an entity that is usually included
+in a library in the module that is currently inspecting.

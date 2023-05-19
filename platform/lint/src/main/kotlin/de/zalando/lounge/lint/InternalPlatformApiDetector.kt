@@ -10,7 +10,9 @@ import com.android.tools.lint.detector.api.Severity
 import com.android.tools.lint.detector.api.SourceCodeScanner
 import com.intellij.psi.PsiClass
 import com.intellij.psi.impl.source.PsiClassReferenceType
+import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.uast.UClass
+import org.jetbrains.uast.toUElementOfType
 
 class InternalPlatformApiDetector : Detector(), SourceCodeScanner {
 
@@ -31,8 +33,8 @@ class InternalPlatformApiDetector : Detector(), SourceCodeScanner {
 
         context.report(
             InternalPlatformApiAnnotationUsage,
-            declaration,
-            context.getLocation(annotation),
+            annotation,
+            context.getNameLocation(annotation),
             "Only platform classes can be annotated with `InternalPlatformApi`."
         )
     }
@@ -43,14 +45,14 @@ class InternalPlatformApiDetector : Detector(), SourceCodeScanner {
             // seeks to fasten up processing when is the case. This can be removed if needed later on.
             if (!field.hasAnnotation(InjectFqn)) return@loop
 
-            val fieldType = (field.type as? PsiClassReferenceType)?.resolve() ?: return@loop
+            val fieldType = context.evaluator.getTypeClass(field.type) ?: return@loop
 
             if (fieldType.hasAnnotation(InternalPlatformApiFqn) && fieldType.isInPlatformModule) {
                 context.report(
                     InternalPlatformApiUsage,
                     field,
-                    context.getLocation(field),
-                    "`${fieldType.name}` is a platform internal API."
+                    context.getNameLocation(field.typeReference ?: field),
+                    "`${fieldType.name}` is a platform internal API.",
                 )
             }
         }
