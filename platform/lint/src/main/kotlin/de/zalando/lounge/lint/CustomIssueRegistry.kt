@@ -15,6 +15,7 @@ class CustomIssueRegistry : IssueRegistry() {
             InternalPlatformApiDetector.InternalPlatformApiAnnotationUsage,
             ProducingStateValueDetector.ProducingStateValueNotAssigned,
             RememberDetector.RememberReturnType,
+            RestrictedFlowCallsDetector.FlowOperatorCalledWithinRestrictedFlow,
         )
 
     override val vendor = Vendor(

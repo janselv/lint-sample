@@ -62,8 +62,7 @@ class RememberDetector : Detector(), SourceCodeScanner {
         get() = (containingFile as? PsiJavaFile)?.packageName == "me.jansv.runtime"
 
     private inline val PsiType?.isVoidOrUnit
-        get() =
-            this == PsiType.VOID || this?.canonicalText == "kotlin.Unit"
+        get() = this == PsiType.VOID || this?.canonicalText == "kotlin.Unit"
 
     companion object {
         val RememberReturnType = Issue.create(
