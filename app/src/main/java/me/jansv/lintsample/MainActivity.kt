@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import me.jansv.runtime.MutableState
 import me.jansv.runtime.producingState
+import me.jansv.runtime.remember
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -11,6 +12,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
     }
 }
+
+/**
+ * ------------------------ TESTING producingState { } ------------------------
+ */
+
 
 fun producingState() { }
 
@@ -27,3 +33,11 @@ fun testingProducingState() {
 }
 
 fun accepting(state: MutableState<Int>) { }
+
+/**
+ * ------------------------ TESTING remember { } ------------------------
+ */
+
+fun testingRemember() {
+    val d = remember { 90 }
+}
