@@ -9,10 +9,9 @@ import com.android.tools.lint.detector.api.Scope
 import com.android.tools.lint.detector.api.Severity
 import com.android.tools.lint.detector.api.SourceCodeScanner
 import com.intellij.psi.PsiClass
-import com.intellij.psi.impl.source.PsiClassReferenceType
-import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.uast.UClass
-import org.jetbrains.uast.toUElementOfType
+import org.jetbrains.uast.UParameter
+import org.jetbrains.uast.toUElement
 
 class InternalPlatformApiDetector : Detector(), SourceCodeScanner {
 
@@ -24,6 +23,7 @@ class InternalPlatformApiDetector : Detector(), SourceCodeScanner {
         }
         checkAnnotationUsage(context, declaration)
         checkFieldDeclaration(context, declaration)
+        checkConstructorUsage(context, declaration)
     }
 
     private fun checkAnnotationUsage(context: JavaContext, declaration: UClass) {
@@ -41,8 +41,6 @@ class InternalPlatformApiDetector : Detector(), SourceCodeScanner {
 
     private fun checkFieldDeclaration(context: JavaContext, declaration: UClass) {
         declaration.fields.forEach loop@{ field ->
-            // Optimistically most usages will be in the context of field injection. This filtering
-            // seeks to fasten up processing when is the case. This can be removed if needed later on.
             if (!field.hasAnnotation(InjectFqn)) return@loop
 
             val fieldType = context.evaluator.getTypeClass(field.type) ?: return@loop
@@ -58,6 +56,30 @@ class InternalPlatformApiDetector : Detector(), SourceCodeScanner {
         }
     }
 
+    private fun checkConstructorUsage(context: JavaContext, declaration: UClass) {
+        val injectConstructor = declaration.constructors.find {
+            it.hasAnnotation(InjectFqn)
+        } ?: return
+
+        injectConstructor.parameterList.parameters.forEach loop@{ param ->
+            val paramType = context.evaluator.getTypeClass(param.type) ?: return@loop
+
+            if (paramType.hasAnnotation(InternalPlatformApiFqn) && paramType.isInPlatformModule) {
+                val location = (param.toUElement() as UParameter)
+                    .typeReference?.let {
+                        context.getNameLocation(it)
+                    } ?: context.getNameLocation(param)
+
+                context.report(
+                    InternalPlatformApiUsage,
+                    param,
+                    location,
+                    "`${paramType.name}` is a platform internal API.",
+                )
+            }
+        }
+    }
+
     private inline val PsiClass.isInPlatformModule
         get() = PlatformModulesDir in containingFile.virtualFile.path
 
@@ -66,6 +88,8 @@ class InternalPlatformApiDetector : Detector(), SourceCodeScanner {
 
     companion object {
         private const val PlatformModulesDir = "platform"
+        // Optimistically most usages will be in the context injection. Filtering on Inject annotation
+        // seeks to fasten up processing. This can be removed if needed later on.
         private const val InjectFqn =
             "javax.inject.Inject"
         private const val InternalPlatformApiFqn =
