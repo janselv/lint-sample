@@ -27,7 +27,7 @@ class RememberDetector : Detector(), SourceCodeScanner {
 
         val sourcePsi = node.sourcePsi
         // in practice it seemed this extra computation is not needed as the return type
-        // was properly computed in all the cases this extra step seeked to cover.
+        // was properly computed in all the cases this extra step sought to cover.
         val isReallyUnit = when {
             node.typeArguments.singleOrNull().isVoidOrUnit -> {
                 true
