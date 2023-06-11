@@ -13,7 +13,6 @@ import com.android.tools.lint.detector.api.StringOption
 import org.jetbrains.uast.UClass
 
 class ParametrizedDetector : Detector(), SourceCodeScanner {
-
     override fun applicableSuperClasses() = listOf("java.lang.Object")
 
     override fun beforeCheckEachProject(context: Context) {
