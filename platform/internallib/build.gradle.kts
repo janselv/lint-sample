@@ -4,6 +4,10 @@ plugins {
     id("com.android.lint")
 }
 
+lint {
+    lintConfig = layout.projectDirectory.file("lint.xml").asFile
+}
+
 dependencies {
     api(project(":platform:annotations"))
     api(project(":platform:runtime"))

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <issue id="ParametrizedIssue">
+        <option name="platform-dirs" value="platform" />
+    </issue>
+</lint>

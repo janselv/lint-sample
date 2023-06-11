@@ -19,7 +19,6 @@ class MainActivity : AppCompatActivity() {
  * ------------------------ TESTING producingState { } ------------------------
  */
 
-
 fun producingState() { }
 
 fun testingProducingState() {

@@ -16,6 +16,7 @@ class CustomIssueRegistry : IssueRegistry() {
             ProducingStateValueDetector.ProducingStateValueNotAssigned,
             RememberDetector.RememberReturnType,
             RestrictedFlowCallsDetector.FlowOperatorCalledWithinRestrictedFlow,
+            ParametrizedDetector.ISSUE,
         )
 
     override val vendor = Vendor(

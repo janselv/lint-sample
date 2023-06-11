@@ -34,6 +34,10 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    lint {
+        lintConfig = layout.projectDirectory.file("lint.xml").asFile
+    }
 }
 
 
