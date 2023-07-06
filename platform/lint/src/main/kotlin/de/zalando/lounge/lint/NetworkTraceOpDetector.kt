@@ -21,7 +21,7 @@ import org.jetbrains.uast.toUElement
 
 /**
  * Detector that checks Retrofit annotated methods and diagnose either a missing `NetworkTraceOp` tag
- * or the wrong type on the tag parameter.
+ * or a wrong type on the tag parameter.
  */
 class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
 
