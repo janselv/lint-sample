@@ -13,6 +13,10 @@ import org.jetbrains.uast.UClass
 import org.jetbrains.uast.UParameter
 import org.jetbrains.uast.toUElement
 
+/**
+ * [Detector] that check If @InternalPlatformApi annotation or platform types annotated with it
+ * are used outside platform modules scope.
+ */
 class InternalPlatformApiDetector : Detector(), SourceCodeScanner {
 
     override fun applicableSuperClasses() = listOf("java.lang.Object")
@@ -43,14 +47,14 @@ class InternalPlatformApiDetector : Detector(), SourceCodeScanner {
         declaration.fields.forEach loop@{ field ->
             if (!field.hasAnnotation(InjectFqn)) return@loop
 
-            val fieldType = context.evaluator.getTypeClass(field.type) ?: return@loop
+            val fieldTypeClass = context.evaluator.getTypeClass(field.type) ?: return@loop
 
-            if (fieldType.hasAnnotation(InternalPlatformApiFqn) && fieldType.isInPlatformModule) {
+            if (fieldTypeClass.hasAnnotation(InternalPlatformApiFqn) && fieldTypeClass.isInPlatformModule) {
                 context.report(
                     InternalPlatformApiUsage,
                     field,
                     context.getNameLocation(field.typeReference ?: field),
-                    "`${fieldType.name}` is a platform internal API.",
+                    "`${fieldTypeClass.name}` is a platform internal API.",
                 )
             }
         }
@@ -62,9 +66,9 @@ class InternalPlatformApiDetector : Detector(), SourceCodeScanner {
         } ?: return
 
         injectConstructor.parameterList.parameters.forEach loop@{ param ->
-            val paramType = context.evaluator.getTypeClass(param.type) ?: return@loop
+            val paramTypeClass = context.evaluator.getTypeClass(param.type) ?: return@loop
 
-            if (paramType.hasAnnotation(InternalPlatformApiFqn) && paramType.isInPlatformModule) {
+            if (paramTypeClass.hasAnnotation(InternalPlatformApiFqn) && paramTypeClass.isInPlatformModule) {
                 val location = (param.toUElement() as UParameter)
                     .typeReference?.let {
                         context.getNameLocation(it)
@@ -74,7 +78,7 @@ class InternalPlatformApiDetector : Detector(), SourceCodeScanner {
                     InternalPlatformApiUsage,
                     param,
                     location,
-                    "`${paramType.name}` is a platform internal API.",
+                    "`${paramTypeClass.name}` is a platform internal API.",
                 )
             }
         }

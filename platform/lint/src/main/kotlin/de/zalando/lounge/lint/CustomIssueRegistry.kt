@@ -17,6 +17,8 @@ class CustomIssueRegistry : IssueRegistry() {
             RememberDetector.RememberReturnType,
             RestrictedFlowCallsDetector.FlowOperatorCalledWithinRestrictedFlow,
             ParametrizedDetector.ISSUE,
+            NetworkTraceOpDetector.MissingNetworkTraceOpTag,
+            NetworkTraceOpDetector.WrongNetworkTraceOpParamType,
         )
 
     override val vendor = Vendor(

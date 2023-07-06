@@ -3,10 +3,13 @@ package me.jansv.lintsample
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import me.jansv.runtime.MutableState
 import me.jansv.runtime.producingState
 import me.jansv.runtime.remember
 import me.jansv.runtime.restrictedFlowCalls
+import me.jansv.runtime.someNiceExtension
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
