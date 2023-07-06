@@ -127,6 +127,7 @@ class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
             when (!method.hasParameters() || method.parameterList.parametersCount == 1) {
                 true -> !parametersLocation.isSingleLine()
                 else -> {
+                    // check if all parameters are in the same line separated by \n
                     method.parameterList.parameters
                         .mapTo(mutableSetOf()) {
                             context.getLocation(it).start?.line ?: 0
@@ -140,7 +141,7 @@ class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
                 // insert a `,` right after last parameter's type before any existing trailing `,`
                 append(",")
             }
-            // parameterless but multiline methods we don't need the extra \n
+            // parameterless but multiline methods don't need the extra \n
             when (isParameterListMultiline && method.hasParameters()) {
                 true -> append("\n")
                 else -> append("")
