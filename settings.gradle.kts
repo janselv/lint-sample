@@ -33,7 +33,7 @@ include(":platform:runtime")
  * Copy IDE live templates located in .idea/templates into the data directory of this AS.
  * Copy is attempted only while gradle sync/build happens from AS and when doing clean build.
  */
-fun tryCopyLiveTemplates() = System.getProperty("idea.paths.selector")?.let { selector ->
+fun applyIdeaLiveTemplates() = System.getProperty("idea.paths.selector")?.let { selector ->
     val isMacOS = System.getProperty("os.name", "").contains("mac", ignoreCase = true)
     val userHome = System.getProperty("user.home", "")
 
