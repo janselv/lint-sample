@@ -12,9 +12,7 @@ import com.android.tools.lint.detector.api.Location
 import com.android.tools.lint.detector.api.Scope
 import com.android.tools.lint.detector.api.Severity
 import com.android.tools.lint.detector.api.SourceCodeScanner
-import com.intellij.psi.PsiParameter
 import com.intellij.psi.util.InheritanceUtil
-import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.uast.UMethod
 import org.jetbrains.uast.UParameter
 import org.jetbrains.uast.toUElement
@@ -107,16 +105,20 @@ class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
      * ```
      */
     private fun fixMissingNetworkTraceOpTag(context: JavaContext, method: UMethod): LintFix? {
-        val parametersLocation = context.getLocation(method.parameterList)
+        val paramsLocation = context.getLocation(method.parameterList)
+
+        if (null == paramsLocation.start || null == paramsLocation.end)
+            return null
+
         val insertLocation = when (!method.hasParameters()) {
             true -> {
                 // location of parameterList starts before `(` and end after `)`.
                 // We move a position backward to insert before `)` but after `(`.
-                val start = parametersLocation.start ?: return null
-                val end = parametersLocation.end ?: return null
+                val start = requireNotNull(paramsLocation.start)
+                val end = requireNotNull(paramsLocation.end)
                 val insertColumn = if (end.column - 1 < 0) return null else end.column - 1
                 Location.create(
-                    file = parametersLocation.file,
+                    file = paramsLocation.file,
                     start = start,
                     end = DefaultPosition(end.line, insertColumn, end.offset - 1),
                 )
@@ -124,36 +126,12 @@ class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
             else -> context.getLocation(method.parameterList.parameters.last())
         }
         val isParameterListMultiline =
-            when (!method.hasParameters() || method.parameterList.parametersCount == 1) {
-                true -> !parametersLocation.isSingleLine()
-                else -> {
-                    // check if all parameters are in the same line separated by \n
-                    method.parameterList.parameters
-                        .mapTo(mutableSetOf()) {
-                            context.getLocation(it).start?.line ?: 0
-                        }.size != 1
-                }
-            }
-
+            method.isParameterListMultiline(context, paramsLocation)
         // honor parameter list's formatting and trailing `,`
-        val traceParameter = buildString {
-            if (method.hasParameters()) {
-                // insert a `,` right after last parameter's type before any existing trailing `,`
-                append(",")
-            }
-            // parameterless but multiline methods don't need the extra \n
-            when (isParameterListMultiline && method.hasParameters()) {
-                true -> append("\n")
-                else -> append("")
-            }
-            append("@$TagAnnotationFqn tag: $NetworkTraceOpFqn")
-            // parameterless but multiline methods need an extra \n after the trace op but before `)`
-            if (isParameterListMultiline && !method.hasParameters())
-                append("\n")
-        }
+        val traceParameter = method.getTraceParameter(isParameterListMultiline)
 
         return fix()
-            .name("Insert a `NetworkTraceOp` tag")
+            .name("Insert a NetworkTraceOp tag")
             .replace()
             .range(insertLocation)
             .end()
@@ -163,11 +141,39 @@ class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
             .build()
     }
 
+    private fun UMethod.getTraceParameter(isParameterListMultiline: Boolean) = buildString {
+        if (hasParameters()) {
+            // insert a `,` right after last parameter's type before any existing trailing `,`
+            append(",")
+        }
+        // parameterless but multiline methods don't need the extra \n
+        when (isParameterListMultiline && hasParameters()) {
+            true -> append("\n")
+            else -> append("")
+        }
+        append("@$TagAnnotationFqn tag: $NetworkTraceOpFqn")
+        // parameterless but multiline methods need an extra \n after the trace op but before `)`
+        if (isParameterListMultiline && !hasParameters())
+            append("\n")
+    }
+
+    private fun UMethod.isParameterListMultiline(context: JavaContext, parametersLocation: Location) =
+        when (!hasParameters() || parameterList.parametersCount == 1) {
+            true -> !parametersLocation.isSingleLine()
+            else -> {
+                // check if all parameters are in the same line separated by \n
+                parameterList.parameters
+                    .mapTo(mutableSetOf()) {
+                        context.getLocation(it).start?.line ?: 0
+                    }.size != 1
+            }
+        }
+
     /**
      * Change the type of the trace tag parameter to be exactly `NetworkTraceOp`
      */
     private fun fixWrongNetworkTraceOpParameterType(location: Location) = fix()
-        .name("Change to `NetworkTraceOp`")
+        .name("Change to NetworkTraceOp")
         .replace()
         .range(location)
         .with(NetworkTraceOpFqn)
@@ -183,17 +189,17 @@ class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
             "retrofit2.http.DELETE"
         )
         private const val TagAnnotationFqn = "retrofit2.http.Tag"
-        private const val NetworkTraceOpFqn = "me.jansv.internallib.NetworkTraceOp"
+        private const val NetworkTraceOpFqn = "de.zalando.lounge.tracing.NetworkTraceOp"
 
         val MissingNetworkTraceOpTag = Issue.create(
             id = "MissingNetworkTraceOpTag",
             briefDescription = "Retrofit methods should have a NetworkTraceOp tag.",
             explanation = "Retrofit methods are required to have a tag of type `NetworkTraceOp` " +
-                "in order to get proper coverage on LightStep tracing. A `NetworkTraceOp` " +
-                "is used to set the network operation name and its group. A missing network " +
-                "trace op tag won't cause the endpoint to be traced on LightStep but will lead " +
-                "to unexpected behavior such as creating a complete new operation group and " +
-                "assign the URL path as operation name, which might change over time.",
+                    "in order to get proper coverage on LightStep tracing. A `NetworkTraceOp` " +
+                    "is used to set the network operation name and its group. A missing network " +
+                    "trace tag won't cause the endpoint to be traced on LightStep but will lead " +
+                    "to unexpected behavior such as creating a complete new operation group and " +
+                    "assigning the URL path as operation name, which might change over time.",
             category = Category.CORRECTNESS,
             priority = 9,
             severity = Severity.ERROR,
@@ -206,10 +212,10 @@ class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
             id = "WrongNetworkTraceOpParamType",
             briefDescription = "The network trace op parameter must have `NetworkTraceOp` type.",
             explanation = "Retrofit network operation tags are looked up by their static types." +
-                "This means that statements such as `Request.tag(NetworkTraceOp::class)` won't " +
-                "consider tags set for `NetworkTraceOp` subclasses. Only method parameters with " +
-                "type `NetworkTraceOp` will be considered. E.g. `@Tag op: NetworkTraceOp = <subclass>` " +
-                "will be valid, but `@Tag op: NetworkTraceOpSubclass = <subclass>` won't.",
+                    "This means that statements such as `Request.tag(NetworkTraceOp::class)` won't " +
+                    "consider tags set for `NetworkTraceOp` subclasses. Only method parameters with " +
+                    "type `NetworkTraceOp` will be considered. E.g. `@Tag op: NetworkTraceOp = <subclass>` " +
+                    "will be valid, but `@Tag op: NetworkTraceOpSubclass = <subclass>` won't.",
             category = Category.CORRECTNESS,
             priority = 9,
             severity = Severity.ERROR,

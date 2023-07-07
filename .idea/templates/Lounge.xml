@@ -1,0 +1,17 @@
+<templateSet group="Lounge">
+  <template name="iresr" value="import de.zalando.lounge.resources.R as ResR" description="import de.zalando.lounge.resources.R as ResR" toReformat="true" toShortenFQNames="true">
+    <context>
+      <option name="KOTLIN_TOPLEVEL" value="true" />
+    </context>
+  </template>
+  <template name="iluxr" value="import de.zalando.lounge.lux.R as LuxR" description="import de.zalando.lounge.lux.R as LuxR" toReformat="true" toShortenFQNames="true">
+    <context>
+      <option name="KOTLIN_TOPLEVEL" value="true" />
+    </context>
+  </template>
+  <template name="iuibaser" value="import de.zalando.lounge.uibase.R as UiBaseR" description="import de.zalando.lounge.uibase.R as UiBaseR" toReformat="true" toShortenFQNames="true">
+    <context>
+      <option name="KOTLIN_TOPLEVEL" value="true" />
+    </context>
+  </template>
+</templateSet>
