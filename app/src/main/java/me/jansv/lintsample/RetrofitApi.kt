@@ -14,5 +14,5 @@ class SomeImpl : NetworkTraceOp {
 
 interface RetrofitApi {
     @GET
-    fun callMissingTraceOp(@Tag tag: NetworkTraceOp): Response<String>
+    suspend fun callMissingTraceOp(url: String, @Tag tag: NetworkTraceOp): Response<String>
 }

@@ -13,6 +13,7 @@ import com.android.tools.lint.detector.api.Scope
 import com.android.tools.lint.detector.api.Severity
 import com.android.tools.lint.detector.api.SourceCodeScanner
 import com.intellij.psi.util.InheritanceUtil
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.uast.UMethod
 import org.jetbrains.uast.UParameter
 import org.jetbrains.uast.toUElement
@@ -107,24 +108,8 @@ class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
     private fun fixMissingNetworkTraceOpTag(context: JavaContext, method: UMethod): LintFix? {
         val paramsLocation = context.getLocation(method.parameterList)
 
-        if (null == paramsLocation.start || null == paramsLocation.end)
-            return null
+        val insertLocation = method.getTraceInsertLocation(context, paramsLocation) ?: return null
 
-        val insertLocation = when (!method.hasParameters()) {
-            true -> {
-                // location of parameterList starts before `(` and end after `)`.
-                // We move a position backward to insert before `)` but after `(`.
-                val start = requireNotNull(paramsLocation.start)
-                val end = requireNotNull(paramsLocation.end)
-                val insertColumn = if (end.column - 1 < 0) return null else end.column - 1
-                Location.create(
-                    file = paramsLocation.file,
-                    start = start,
-                    end = DefaultPosition(end.line, insertColumn, end.offset - 1),
-                )
-            }
-            else -> context.getLocation(method.parameterList.parameters.last())
-        }
         val isParameterListMultiline =
             method.isParameterListMultiline(context, paramsLocation)
         // honor parameter list's formatting and trailing `,`
@@ -141,8 +126,42 @@ class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
             .build()
     }
 
+    private fun UMethod.getTraceInsertLocation(context: JavaContext, parametersLocation: Location): Location? {
+        return when {
+            null == parametersLocation.start || null == parametersLocation.end -> null
+            !hasParameters() -> {
+                // location of parameterList starts before `(` and end after `)`.
+                // We move a position backward to insert before `)` but after `(`.
+                val start = requireNotNull(parametersLocation.start)
+                val end = requireNotNull(parametersLocation.end)
+                val insertColumn = if (end.column - 1 < 0) return null else end.column - 1
+                Location.create(
+                    file = parametersLocation.file,
+                    start = start,
+                    end = DefaultPosition(end.line, insertColumn, end.offset - 1),
+                )
+            }
+            !isKotlinSuspending -> context.getLocation(parameterList.parameters.last())
+            parameterList.parametersCount == 1 -> {
+                // parameterless suspending needs insertion after `(`
+                val start = requireNotNull(parametersLocation.start)
+                Location.create(
+                    file = parametersLocation.file,
+                    start = start,
+                    end = DefaultPosition(start.line, start.column + 1, start.offset + 1)
+                )
+            }
+            else -> context.getLocation(
+                parameterList.getParameter(parameterList.parameters.lastIndex - 1)
+            )
+        }
+    }
+
     private fun UMethod.getTraceParameter(isParameterListMultiline: Boolean) = buildString {
-        if (hasParameters()) {
+        val isParameterlessSuspending =
+            isKotlinSuspending && parameterList.parametersCount == 1
+
+        if (hasParameters() && !isParameterlessSuspending) {
             // insert a `,` right after last parameter's type before any existing trailing `,`
             append(",")
         }
@@ -161,10 +180,10 @@ class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
         when (!hasParameters() || parameterList.parametersCount == 1) {
             true -> !parametersLocation.isSingleLine()
             else -> {
-                // check if all parameters are in the same line separated by \n
+                // check if all parameters are in the same line or separated by \n
                 parameterList.parameters
-                    .mapTo(mutableSetOf()) {
-                        context.getLocation(it).start?.line ?: 0
+                    .mapNotNullTo(mutableSetOf()) {
+                        context.getLocation(it).start?.line
                     }.size != 1
             }
         }
@@ -181,6 +200,11 @@ class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
         .shortenNames()
         .build()
 
+    private inline val UMethod.isKotlinSuspending
+        get() = sourcePsi is KtFunction &&
+                parameterList.parametersCount > 0 &&
+                parameterList.parameters.last().type.canonicalText.startsWith(ContinuationFqn)
+
     companion object {
         private val HttpMethodAnnotationsFqn = listOf(
             "retrofit2.http.GET",
@@ -189,7 +213,8 @@ class NetworkTraceOpDetector : Detector(), SourceCodeScanner {
             "retrofit2.http.DELETE"
         )
         private const val TagAnnotationFqn = "retrofit2.http.Tag"
-        private const val NetworkTraceOpFqn = "de.zalando.lounge.tracing.NetworkTraceOp"
+        private const val NetworkTraceOpFqn = "me.jansv.internallib.NetworkTraceOp"
+        private const val ContinuationFqn = "kotlin.coroutines.Continuation"
 
         val MissingNetworkTraceOpTag = Issue.create(
             id = "MissingNetworkTraceOpTag",
