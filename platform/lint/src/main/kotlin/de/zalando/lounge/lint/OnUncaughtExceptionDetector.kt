@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtSuperTypeCallEntry
 import org.jetbrains.uast.UCallExpression
 import org.jetbrains.uast.UClass
+import org.jetbrains.uast.UMethod
 import org.jetbrains.uast.visitor.AbstractUastVisitor
 
 /**
@@ -45,25 +46,22 @@ class OnUncaughtExceptionDetector : Detector(), SourceCodeScanner {
 
     private fun UClass.invokesOnUncaughtException(context: JavaContext): Boolean {
         var invokesOnUncaughtException = false
-
-        accept(object : AbstractUastVisitor() {
-            override fun visitCallExpression(node: UCallExpression): Boolean {
-                if (node.methodName == OnUncaughtException) {
-                    val method = node.resolve()
-                    method?.let {
+        accept(
+            callExpressionVisitor { call ->
+                if (call.methodName == OnUncaughtException) {
+                    call.resolve()?.let {
                         invokesOnUncaughtException =
                             context.evaluator.isMemberInClass(it, AbstractViewModelFqn)
                     }
                 }
-                return invokesOnUncaughtException
-            }
-        })
+                invokesOnUncaughtException
+            },
+        )
         return invokesOnUncaughtException
     }
 
     /**
-     * Returns whether the evaluated class is using `SkipPreconditions` as argument to
-     * `AbstractViewModel`.
+     * Returns whether the evaluated class desires to skip preconditions.
      *
      * A class is skipping preconditions if the following holds:
      * 1. Is invoking super with a non-parameter expression that evaluates to `SkipPreconditions`.
@@ -71,49 +69,55 @@ class OnUncaughtExceptionDetector : Detector(), SourceCodeScanner {
      * 2. Is invoking super with a parameter expression with static type `SkipPreconditions`.
      *
      * Secondary constructors are ignored since they will eventually call the primary one and this will
-     * call super. If the precondition parameter's type in the primary constructor is `UiPreconditions`
-     * implies that the class can be instantiated with a non `SkipPreconditions`, hence might be fallible.
+     * call super. Having a preconditions parameter in the primary constructor with `UiPreconditions` type
+     * implies that the class can be instantiated with a non `SkipPreconditions` which makes it fallible.
      *
-     * **Note**: Using UAST will resolve the preconditions argument's type to a ClsClassImpl PsiElement.
+     * **Note**: UAST will resolve the preconditions argument's type to a ClsClassImpl PsiElement.
      * Instead of resolving to the JVM compiled type we need to resolve the Kotlin type. If ClsClassImpl
      * were to be used to resolve it, it will require parsing the kotlin-metadata annotations which will
-     * leak to the lint's consumer. Instead we use the `analyze` API to transparently resolve the Kotlin type.
+     * leak to the lint's consumer. Instead we use the [analyze] API to transparently resolve the Kotlin type.
      */
     private fun UClass.isSkippingPreconditions(): Boolean {
         // assume is skipping preconditions then try to disprove it.
         var isSkippingPreconditions = true
 
         methods.filter { it.isConstructor }.forEach { method ->
-            method.accept(object : AbstractUastVisitor() {
-                override fun visitCallExpression(node: UCallExpression): Boolean {
-                    val sourcePsi = node.sourcePsi
-                    if (sourcePsi is KtSuperTypeCallEntry) {
-                        analyze(sourcePsi) {
-                            val constructor = sourcePsi.resolveCall()
-                                ?.singleConstructorCallOrNull()
-                                ?.takeIf {
-                                    // is an AbstractViewModel constructor?
-                                    isAbstractViewModel(it.symbol.returnType)
-                                }
-
-                            // find the argument for the preconditions parameter
-                            val argument = constructor?.argumentMapping?.entries
-                                ?.find { (_, parameter) ->
-                                    isUiPreconditionsOrSubclass(parameter.returnType)
-                                }
-                                ?.key
-
-                            argument?.getKtType()?.let {
-                                isSkippingPreconditions = isSkipPreconditions(it)
-                            }
-                        }
+            method.analyzeSuperConstructorCall { call ->
+                val constructor = call.resolveCall()
+                    ?.singleConstructorCallOrNull()
+                    ?.takeIf {
+                        // is an AbstractViewModel constructor?
+                        isAbstractViewModel(it.symbol.returnType)
                     }
-                    return sourcePsi is KtSuperTypeCallEntry
+
+                // find the argument for the preconditions parameter
+                val argument = constructor?.argumentMapping?.entries
+                    ?.find { (_, parameter) ->
+                        isUiPreconditionsOrSubclass(parameter.returnType)
+                    }
+                    ?.key
+
+                argument?.getKtType()?.let {
+                    isSkippingPreconditions = isSkipPreconditions(it)
                 }
-            })
+            }
         }
         return isSkippingPreconditions
     }
+
+    private inline fun UMethod.analyzeSuperConstructorCall(
+        crossinline action: KtAnalysisSession.(KtSuperTypeCallEntry) -> Unit,
+    ) = accept(
+        callExpressionVisitor {
+            val sourcePsi = it.sourcePsi
+            if (sourcePsi is KtSuperTypeCallEntry) {
+                analyze(sourcePsi) {
+                    action(sourcePsi)
+                }
+            }
+            sourcePsi is KtSuperTypeCallEntry
+        },
+    )
 
     private fun fixMissingOnUncaughtException(context: JavaContext, declaration: UClass): LintFix? {
         val sourcePsi = declaration.sourcePsi as? KtClass
@@ -147,6 +151,14 @@ class OnUncaughtExceptionDetector : Detector(), SourceCodeScanner {
             appendLine("}")
             if (addClassBodyBraces) append("}")
         }
+
+    private inline fun callExpressionVisitor(
+        crossinline action: (UCallExpression) -> Boolean,
+    ) = object : AbstractUastVisitor() {
+        override fun visitCallExpression(node: UCallExpression): Boolean {
+            return action(node)
+        }
+    }
 
     private fun UClass.isAbstractViewModel() = qualifiedName == AbstractViewModelFqn
 
