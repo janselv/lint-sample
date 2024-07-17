@@ -11,6 +11,7 @@ import com.android.tools.lint.detector.api.SourceCodeScanner
 import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiType
+import com.intellij.psi.PsiTypes
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.uast.UCallExpression
@@ -62,7 +63,7 @@ class RememberDetector : Detector(), SourceCodeScanner {
         get() = (containingFile as? PsiJavaFile)?.packageName == "me.jansv.runtime"
 
     private inline val PsiType?.isVoidOrUnit
-        get() = this == PsiType.VOID || this?.canonicalText == "kotlin.Unit"
+        get() = this == PsiTypes.voidType() || this?.canonicalText == "kotlin.Unit"
 
     companion object {
         val RememberReturnType = Issue.create(

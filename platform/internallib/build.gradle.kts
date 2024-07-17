@@ -5,7 +5,7 @@ plugins {
 }
 
 lint {
-    lintConfig = layout.projectDirectory.file("lint.xml").asFile
+    lintConfig = File(rootDir, "lint.xml")
 }
 
 dependencies {

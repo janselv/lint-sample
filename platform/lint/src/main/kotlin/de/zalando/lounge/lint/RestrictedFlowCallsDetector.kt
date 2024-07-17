@@ -37,6 +37,7 @@ class RestrictedFlowCallsDetector : Detector(), SourceCodeScanner {
         var callsFlowOperator = false
         var callExpression: UCallExpression? = null
 
+
         block.accept(object : AbstractUastVisitor() {
             override fun visitCallExpression(node: UCallExpression): Boolean {
                 val uMethod = node.resolveToUElement() as? UMethod ?: return false

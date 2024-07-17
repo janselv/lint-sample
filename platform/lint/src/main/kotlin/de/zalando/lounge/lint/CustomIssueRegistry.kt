@@ -19,6 +19,7 @@ class CustomIssueRegistry : IssueRegistry() {
             ParametrizedDetector.ISSUE,
             NetworkTraceOpDetector.MissingNetworkTraceOpTag,
             NetworkTraceOpDetector.WrongNetworkTraceOpParamType,
+            OnUncaughtExceptionDetector.MissingOnUncaughtExceptionCall,
         )
 
     override val vendor = Vendor(
