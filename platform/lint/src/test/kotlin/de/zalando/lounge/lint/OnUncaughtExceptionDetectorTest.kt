@@ -50,7 +50,7 @@ class OnUncaughtExceptionDetectorTest {
             .run()
             .expect(
                 """
-                src/ViewModel1.kt:3: Error: ViewModel using UiPreconditions should call onUncaughtException [MissingOnUncaughtExceptionCall]
+                src/ViewModel1.kt:3: Error: ViewModel1 must call onUncaughtException [MissingOnUncaughtExceptionInvocation]
                 class ViewModel1(p: UiPreconditions) : AbstractViewModel(p)
                       ~~~~~~~~~~
                 1 errors, 0 warnings
@@ -58,7 +58,7 @@ class OnUncaughtExceptionDetectorTest {
             )
             .expectFixDiffs(
                 """
-                Fix for src/ViewModel1.kt line 3: Insert `onUncaughtException` call:
+                Fix for src/ViewModel1.kt line 3: Insert onUncaughtException call:
                 @@ -3 +3
                 - class ViewModel1(p: UiPreconditions) : AbstractViewModel(p)
                 + class ViewModel1(p: UiPreconditions) : AbstractViewModel(p) { 
@@ -170,7 +170,7 @@ class OnUncaughtExceptionDetectorTest {
             .run()
             .expect(
                 """
-                src/ViewModel1.kt:3: Error: ViewModel using UiPreconditions should call onUncaughtException [MissingOnUncaughtExceptionCall]
+                src/ViewModel1.kt:3: Error: ViewModel1 must call onUncaughtException [MissingOnUncaughtExceptionInvocation]
                 class ViewModel1(p: UiPreconditions = SkipPreconditions) : AbstractViewModel(p)
                       ~~~~~~~~~~
                 1 errors, 0 warnings
@@ -178,7 +178,7 @@ class OnUncaughtExceptionDetectorTest {
             )
             .expectFixDiffs(
                 """
-                Fix for src/ViewModel1.kt line 3: Insert `onUncaughtException` call:
+                Fix for src/ViewModel1.kt line 3: Insert onUncaughtException call:
                 @@ -3 +3
                 - class ViewModel1(p: UiPreconditions = SkipPreconditions) : AbstractViewModel(p)
                 + class ViewModel1(p: UiPreconditions = SkipPreconditions) : AbstractViewModel(p) { 
@@ -251,7 +251,7 @@ class OnUncaughtExceptionDetectorTest {
             .run()
             .expect(
                 """
-                src/ViewModel1.kt:4: Error: ViewModel using UiPreconditions should call onUncaughtException [MissingOnUncaughtExceptionCall]
+                src/ViewModel1.kt:4: Error: ViewModel1 must call onUncaughtException [MissingOnUncaughtExceptionInvocation]
                 class ViewModel1(p: UiPreconditions, s: SavedStateHandle) : AbstractViewModel(p, s) {
                       ~~~~~~~~~~
                 1 errors, 0 warnings
@@ -284,7 +284,7 @@ class OnUncaughtExceptionDetectorTest {
             .expectErrorCount(1)
             .expectFixDiffs(
                 """
-                Fix for src/Mixin1.kt line 6: Insert `onUncaughtException` call:
+                Fix for src/Mixin1.kt line 6: Insert onUncaughtException call:
                 @@ -9 +9
                 -     Mixin2
                 +     Mixin2 { 
@@ -318,7 +318,7 @@ class OnUncaughtExceptionDetectorTest {
             .expectErrorCount(1)
             .expectFixDiffs(
                 """
-                Fix for src/Mixin1.kt line 6: Insert `onUncaughtException` call:
+                Fix for src/Mixin1.kt line 6: Insert onUncaughtException call:
                 @@ -6 +6
                 - class ViewModel1(p: UiPreconditions, s: SavedStateHandle) : AbstractViewModel(p, s), Mixin1, Mixin2
                 + class ViewModel1(p: UiPreconditions, s: SavedStateHandle) : AbstractViewModel(p, s), Mixin1, Mixin2 { 
@@ -354,7 +354,7 @@ class OnUncaughtExceptionDetectorTest {
             .expectErrorCount(1)
             .expectFixDiffs(
                 """
-                Fix for src/Mixin1.kt line 6: Insert `onUncaughtException` call:
+                Fix for src/Mixin1.kt line 6: Insert onUncaughtException call:
                 @@ -6 +6
                 - class ViewModel1(p: UiPreconditions, s: SavedStateHandle) : AbstractViewModel(p, s), Mixin1, Mixin2 {
                 + class ViewModel1(p: UiPreconditions, s: SavedStateHandle) : AbstractViewModel(p, s), Mixin1, Mixin2 {
@@ -394,7 +394,7 @@ class OnUncaughtExceptionDetectorTest {
             .expectErrorCount(1)
             .expectFixDiffs(
                 """
-                Fix for src/Mixin1.kt line 6: Insert `onUncaughtException` call:
+                Fix for src/Mixin1.kt line 6: Insert onUncaughtException call:
                 @@ -10 +10
                 - {
                 + {

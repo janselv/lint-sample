@@ -37,7 +37,7 @@ class OnUncaughtExceptionDetector : Detector(), SourceCodeScanner {
                 MissingOnUncaughtExceptionCall,
                 declaration,
                 context.getNameLocation(declaration),
-                message = "ViewModel using `UiPreconditions` should call `onUncaughtException`",
+                message = "`${declaration.name}` must call `onUncaughtException`",
                 quickfixData = fixMissingOnUncaughtException(context, declaration)
             )
         }
@@ -120,7 +120,7 @@ class OnUncaughtExceptionDetector : Detector(), SourceCodeScanner {
         val insertLocation = sourcePsi?.getOnUncaughtExceptionInsertLocation(context) ?: return null
 
         return fix()
-            .name("Insert `onUncaughtException` call")
+            .name("Insert onUncaughtException call")
             .replace()
             .range(insertLocation)
             .end()
@@ -172,12 +172,13 @@ class OnUncaughtExceptionDetector : Detector(), SourceCodeScanner {
         private const val OnUncaughtException = "onUncaughtException"
 
         val MissingOnUncaughtExceptionCall = Issue.create(
-            id = "MissingOnUncaughtExceptionCall",
-            briefDescription = "View models is missing `onUncaughtException` call.",
-            explanation = "`UiPreconditions` other than `SkipPreconditions` might be fallible and " +
-                    "view models should handle failures reported through `onUncaughtException`. " +
-                    "For example, network exceptions arising from preconditions check are reported " +
-                    "through `onUncaughtException` and the view model should handle them properly.",
+            id = "MissingOnUncaughtExceptionInvocation",
+            briefDescription = "Missing `onUncaughtException` invocation.",
+            explanation = "View models using a `UiPreconditions` other than `SkipPreconditions` " +
+                    "must handle failures reported through `onUncaughtException`. `UiPreconditions` " +
+                    "other than `SkipPreconditions` might be fallible, e.g network exceptions might arise " +
+                    "as part of the preconditions check. `AbstractViewModel` subclasses should handle these errors " +
+                    "accordingly.",
             category = Category.CORRECTNESS,
             priority = 9,
             severity = Severity.ERROR,
