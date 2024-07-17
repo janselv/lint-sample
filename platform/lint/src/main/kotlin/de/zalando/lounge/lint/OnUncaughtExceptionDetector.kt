@@ -184,7 +184,7 @@ class OnUncaughtExceptionDetector : Detector(), SourceCodeScanner {
         private const val OnUncaughtException = "onUncaughtException"
 
         val MissingOnUncaughtExceptionCall = Issue.create(
-            id = "MissingOnUncaughtExceptionInvocation",
+            id = "MissingOnUncaughtExceptionCall",
             briefDescription = "Missing `onUncaughtException` invocation.",
             explanation = "View models using a `UiPreconditions` other than `SkipPreconditions` " +
                     "must handle failures reported through `onUncaughtException`. `UiPreconditions` " +

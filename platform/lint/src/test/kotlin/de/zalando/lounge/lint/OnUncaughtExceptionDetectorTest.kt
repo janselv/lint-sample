@@ -50,7 +50,7 @@ class OnUncaughtExceptionDetectorTest {
             .run()
             .expect(
                 """
-                src/ViewModel1.kt:3: Error: ViewModel1 must call onUncaughtException [MissingOnUncaughtExceptionInvocation]
+                src/ViewModel1.kt:3: Error: ViewModel1 must call onUncaughtException [MissingOnUncaughtExceptionCall]
                 class ViewModel1(p: UiPreconditions) : AbstractViewModel(p)
                       ~~~~~~~~~~
                 1 errors, 0 warnings
@@ -170,7 +170,7 @@ class OnUncaughtExceptionDetectorTest {
             .run()
             .expect(
                 """
-                src/ViewModel1.kt:3: Error: ViewModel1 must call onUncaughtException [MissingOnUncaughtExceptionInvocation]
+                src/ViewModel1.kt:3: Error: ViewModel1 must call onUncaughtException [MissingOnUncaughtExceptionCall]
                 class ViewModel1(p: UiPreconditions = SkipPreconditions) : AbstractViewModel(p)
                       ~~~~~~~~~~
                 1 errors, 0 warnings
@@ -191,7 +191,7 @@ class OnUncaughtExceptionDetectorTest {
     }
 
     @Test
-    fun `should not issue when a default value expression evaluates to SkipPreconditions `() {
+    fun `should not issue when a default value expression evaluates to SkipPreconditions`() {
         lint()
             .files(
                 savedStateHandle,
@@ -251,7 +251,7 @@ class OnUncaughtExceptionDetectorTest {
             .run()
             .expect(
                 """
-                src/ViewModel1.kt:4: Error: ViewModel1 must call onUncaughtException [MissingOnUncaughtExceptionInvocation]
+                src/ViewModel1.kt:4: Error: ViewModel1 must call onUncaughtException [MissingOnUncaughtExceptionCall]
                 class ViewModel1(p: UiPreconditions, s: SavedStateHandle) : AbstractViewModel(p, s) {
                       ~~~~~~~~~~
                 1 errors, 0 warnings
